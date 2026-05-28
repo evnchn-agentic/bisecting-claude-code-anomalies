@@ -1,17 +1,24 @@
 # bisecting-claude-code-anomalies
 
-A [Claude Code skill](https://agentskills.io/specification) that teaches an agent to investigate "Claude Code feels different lately" reports — turning subjective vibe drift into a specific commit-or-changelog citation, or an honest "this lives on the model side and is invisible to bisection."
+A [Claude Code skill](https://agentskills.io/specification) that teaches an agent to investigate "Claude Code feels different lately" reports — turning subjective vibe drift into a specific citation, whether the cause is harness-side (system prompt, tools, CHANGELOG) or model-side (training nudges, sycophancy, reward-hacking, refusal style).
 
 ## What it does
 
-When a user says Claude Code is behaving differently across versions despite "same model," the skill orchestrates four ground-truth signal sources:
+Both signals live in the same JSONL: `.version` for the harness, `.message.model` for the model. The skill runs them in sequence.
 
-1. **Local JSONL `version` field** — every Claude Code message records the version; tells you what was actually running at the incident's wall-clock moment.
-2. **[Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts)** — community-extracted system prompts, updated ~same-day per release, commit titles include `(+N tokens)` deltas.
+**Phase A — harness side** orchestrates four ground-truth sources:
+
+1. **Local JSONL `.version` field** — which CC version was active at the incident moment.
+2. **[Piebald-AI/claude-code-system-prompts](https://github.com/Piebald-AI/claude-code-system-prompts)** — community-extracted system prompts, ~same-day per release, commit titles include `(+N tokens)` deltas.
 3. **`anthropics/claude-code` CHANGELOG.md** — official per-version notes.
 4. **`claude --version`** — what's installed now.
 
-The 7-step process pins the user's "smell" to a timestamp, brackets the suspect version window, ranks candidate commits by token delta, reads the diff, cross-references the official CHANGELOG, and explicitly states what the diff **cannot** explain (sycophancy / refusal style / agreement language — those are model-side and invisible to prompt diffing).
+**Phase B — model side** kicks in when Phase A finds nothing or leaves behavior unexplained:
+
+5. **Local JSONL `.message.model` field** — which model string answered at the incident moment.
+6. **Anthropic system cards** — per-model behavioral audits covering over-refusal, sycophancy, reward-hacking, cooperation-with-misuse, and more. Minor bumps ship addenda that pre-diff and bold the better number.
+
+Phase B is O(k) — shenanigan-first. Start from one observed behavior, classify to one audit axis, look up only that section. Never a generic two-card diff.
 
 Pure shell — no bundled scripts, no required state directory, no network telemetry. Each step is one or two commands you can run independently.
 
