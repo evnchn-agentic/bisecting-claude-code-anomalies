@@ -59,7 +59,7 @@ This skill is **pure inline** — each of the 7 steps below is one or two shell 
 
 6. **Cross-reference `anthropic/claude-code` CHANGELOG.md.** Often mentions the harness-side change without naming the system-prompt one (e.g. "improved stop hooks" can correspond to evaluator-prompt addition). Treat the CHANGELOG as corroboration, not the primary signal.
 
-7. **State plainly what the diff CANNOT explain.** Sycophancy, agreement language ("Yes - strong agree"), refusal style, tone shifts are **model-side** — invisible to system-prompt diffing. Flag the unknown. Do not over-claim that you bisected something you can't see.
+7. **State plainly what the diff CANNOT explain.** Sycophancy, agreement language ("Yes - strong agree"), refusal style, tone shifts are **model-side** — invisible to system-prompt diffing. Flag the unknown. Do not over-claim that you bisected something you can't see. Hand off to `bisecting-claude-model-shenanigans`.
 
 ## Worked example: 2.1.132 Managed Agents bloat (2026-05-09)
 
@@ -86,7 +86,7 @@ This skill is **pure inline** — each of the 7 steps below is one or two shell 
 - **Looking at leaked source-code repos.** Ethically out, and stale; Piebald is the right surface.
 - **Reading the CURRENT installed version's prompt.** The drift may have happened on a version the user already moved off of. Always check JSONLs at the incident's timestamp, not at investigation time.
 - **Skipping the ±1-version bracket.** Piebald may have committed the change between the prior and the version active at incident — it's "baked in" to the active version but introduced in the previous bump.
-- **Attributing all behavior to the system prompt.** Sycophancy, refusal patterns, tone, and agreement language are model-side and bisect-invisible. Acknowledge the gap.
+- **Attributing all behavior to the system prompt.** Sycophancy, refusal patterns, tone, and agreement language are model-side and bisect-invisible. Acknowledge the gap — then invoke `bisecting-claude-model-shenanigans`.
 - **Running the tool on every turn.** It clones / fetches / curls. Run it once per investigation, cache the report, reference the report by path.
 
 ## Reporting back
@@ -97,13 +97,14 @@ Deliverable is a one-screen answer that turns "smelling something wrong" into a 
 - Token delta (e.g. `+6,720`, with neighbors for scale)
 - 3-bullet diff summary
 - Plain statement of which observed behaviors the diff can vs cannot explain
-- If model-side: "this is invisible to bisecting; can only be confirmed by Anthropic disclosure or cross-user pattern."
+- If model-side: "this is invisible to bisecting" → hand off to `bisecting-claude-model-shenanigans` (system-card diffing, JSONL `.message.model` pin, shenanigan routing table).
 
 ## Related public tools (verified 2026-05-20)
 
 - **`Piebald-AI/claude-code-system-prompts`** — primary signal source for this skill. Solo-maintained, ~same-day cadence per CC release, 181 versions tracked at audit. Only continuously-maintained extractor in public.
 - **`Piebald-AI/tweakcc`** (~2k stars) — same maintainer; does HTML side-by-side diffs of CC system prompts across versions. Aimed at conflict-resolution for users who patch the prompt, not at behavior attribution. Useful adjunct if you want a polished diff viewer instead of `git diff`.
 - **`marginlab.ai`** — external daily-benchmark dashboard tracking output-side regressions across LLM versions. Complement, not competitor: measures *outputs*, this skill inspects *prompts*. Cite when the user asks "is anyone else seeing this?"
+- **`bisecting-claude-model-shenanigans`** (evnchn skills) — the model-side companion. Where this skill ends ("model-side, invisible to bisection"), that one begins: system-card diffing, JSONL `.message.model` pin, shenanigan-to-audit-axis routing.
 - **`zep-us/claude-system-prompt`** — dormant since Feb 2026, last covered v2.1.34. Don't reach for; ~3 months stale by mid-2026.
 - **Anthropic's April 23 2026 postmortem** — only official disclosure of a specific CC prompt change (the "25 words / 100 words" verbosity rule). No version-by-version prompt publishing from Anthropic. Cite when the user expects Anthropic to be the source of truth.
 
