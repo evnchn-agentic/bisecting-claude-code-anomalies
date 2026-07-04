@@ -7,11 +7,13 @@ description: Use when a user reports Claude Code "feels different", "drunk", "le
 
 ## Overview
 
-When Claude Code behaves differently, the question is: did the **harness** (system prompt, tools, CHANGELOG) change, or did the **model** change? Both signals live in the same JSONL — `.version` for the harness, `.message.model` for the model. This skill covers both phases in sequence.
+When Claude Code behaves differently, there are **three** possible culprits — not two: your own **config** (CLAUDE.md / skills / hooks / MCP), the **harness** (system prompt, tools, CHANGELOG), or the **model**. Rule them out in that order — cheapest and most-in-your-control first.
 
-**Phase A** — harness side: diff the system prompt via Piebald-AI. Fast, concrete, shell-only.
+**Phase 0** — config side: reproduce under `--safe-mode` (all customizations off). One command; decides in-one-shot whether the drift is yours or the base install's. Run this FIRST — the harness/model bisects are wasted effort if a bloated CLAUDE.md or a bad hook is the real cause.
 
-**Phase B** — model side: diff the behavioral shadow via Anthropic system cards. Kicks in when Phase A finds nothing or can't explain the full behavior. O(k) — shenanigan-first, never a generic two-card diff.
+**Phase A** — harness side: diff the system prompt via Piebald-AI. Fast, concrete, shell-only. Its signal lives in JSONL `.version`.
+
+**Phase B** — model side: diff the behavioral shadow via Anthropic system cards. Kicks in when Phase A finds nothing or can't explain the full behavior. Its signal lives in JSONL `.message.model`. O(k) — shenanigan-first, never a generic two-card diff.
 
 This skill is **pure inline** — each step is one or two shell commands. Run only the ones you need.
 
@@ -20,7 +22,7 @@ This skill is **pure inline** — each step is one or two shell commands. Run on
 - Project-specific bugs — use `superpowers:systematic-debugging` instead.
 - One-shot prompt issues fixable by rewording — no drift to bisect.
 - Model-name swaps the user did intentionally (`--model` changed, /model switched).
-- Suspected MCP / hook / settings.json regression — check those directly first.
+- Suspected MCP / hook / settings.json regression — Phase 0 (`--safe-mode`) isolates these in one command; run it, then check the offending customization directly.
 
 ## Inputs
 
@@ -36,6 +38,21 @@ This skill is **pure inline** — each step is one or two shell commands. Run on
 - **`marginlab.ai`** — cross-user output regression dashboard. Answers "is anyone else seeing this?"
 
 **Forbidden:** leaked source-code repos (ethically out, stale). Speculation dressed as a card finding. Non-deployed preview models — your sessions ran deployed models; a card for a model you can't call explains nothing.
+
+## Phase 0 — Clean-room isolation with `--safe-mode` (1 command)
+
+Before touching the JSONL, rule out the culprit it **can't** see: your own customizations. A bloated `CLAUDE.md`, a heavy skill, a misfiring hook, or MCP tool-count bloat (a 200k window shrunk to ~70k of usable context) all read as "drunk Claude" — and none of them are the base harness or the model.
+
+`--safe-mode` (CC ≥ 2.1.x) starts with **all** customizations disabled — CLAUDE.md, skills, plugins, hooks, MCP servers, custom commands/agents, output styles, workflows, themes, keybindings — while **auth, model selection, built-in tools, and permissions work normally** (it sets `CLAUDE_CODE_SAFE_MODE=1`; admin-managed policy settings still apply). That makes it a clean room: same model, same harness, your customization surfaces disabled (permissions and admin policy still apply).
+
+```bash
+claude --safe-mode      # then reproduce the anomaly here
+```
+
+- **Anomaly VANISHES in safe mode** → the anomaly is **customization-dependent**. Bisect your own config FIRST: disable half your skills/hooks/MCP servers (or trim CLAUDE.md), re-test, repeat until you've minimized the offender. This is the `memory-gc` / context-bloat lineage of the drift. Usually you're done here — but note safe mode proves *dependence on your config*, not that config is the *sole* root cause: a base harness/model regression can surface only in combination with a file/hook you load. So if the minimized offender looks innocent on its own (a tiny CLAUDE.md line, a benign skill), suspect an interaction and still run Phase A/B.
+- **Anomaly SURVIVES in safe mode** → your config is exonerated as a *standalone* cause; the drift is in the base install (or a base × nothing-of-yours path) → **proceed to Phase A.**
+
+Bonus: safe mode is also the **clean room for Phase B reproduction (step 9)** — reproducing under `--safe-mode` strips your `CLAUDE.md`/skills so they can't confound the card lookup. A `CLAUDE.md`-as-constitution refusal (routing table, last row) is exactly this confound: if it normalizes in safe mode, the *file* was the cause, not the model.
 
 ## Phase A — Harness bisect (7 steps)
 
@@ -129,6 +146,7 @@ Phase B is O(k) where k = number of shenanigans observed. Never a generic "diff 
 
 | Signal | Source | Latency | Tells you |
 |---|---|---|---|
+| Config clean-room | `claude --safe-mode` | live | Whether YOUR config (vs base harness/model) is the culprit |
 | Local CC version | `claude --version` | live | What you actually run |
 | JSONL `.version` | `~/.claude/projects/**/*.jsonl` | live | Which harness versions touched which sessions |
 | JSONL `.message.model` | same JSONLs | live | Which model answered at the incident moment |
@@ -141,6 +159,7 @@ Phase B is O(k) where k = number of shenanigans observed. Never a generic "diff 
 
 ## Common mistakes
 
+- **Skipping Phase 0.** Diffing the harness prompt and model card for a drift that a bloated CLAUDE.md, a bad hook, or MCP tool-bloat actually caused. `--safe-mode` rules out your own config in one command — run it before you touch Piebald or a system card.
 - **Treating "feels off" as the input.** Force a timestamp first. No anchor → no bisect.
 - **Looking at leaked source-code repos.** Ethically out, and stale.
 - **Reading the CURRENT version's prompt.** The drift may be on a version the user moved off of. Always use the incident timestamp.
@@ -155,6 +174,9 @@ Phase B is O(k) where k = number of shenanigans observed. Never a generic "diff 
 ## Reporting back
 
 One screen that turns "something is wrong" into a specific citation:
+
+**If Phase 0 resolved it:**
+- "Reproduces with your config, vanishes under `--safe-mode`" + which customization axis (CLAUDE.md / skill / hook / MCP) + the specific offender once you've halved it down. The base harness/model is exonerated as a standalone cause (flag any suspected config × base interaction if the offender looks innocent alone).
 
 **If Phase A resolved it:**
 - CC version transition + token delta + 3-bullet diff summary + which behaviors the diff explains vs doesn't
