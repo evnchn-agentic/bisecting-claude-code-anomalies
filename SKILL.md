@@ -32,7 +32,7 @@ This skill is **pure inline** — each step is one or two shell commands. Run on
 
 **Phase B (model)**
 - **JSONL `.message.model` field** — per-message authoritative model string. The model-side analogue of `.version`.
-- **Anthropic system cards** — `anthropic.com/<model>-system-card` and the `assets.anthropic.com` PDF mirror. Full cards for major bumps; minor bumps get an **addendum** that pre-diffs and bolds the better number — your O(1) gift.
+- **Anthropic system cards** — `anthropic.com/<model>-system-card` and the `assets.anthropic.com` PDF mirror. Full cards for major bumps; *some* minor bumps (e.g. Opus 4.1) ship an **addendum** with comparative tables — when present it's your O(1) gift, but check metric direction, error bars, and any methodology note (some deltas are within noise).
 - **`marginlab.ai`** — cross-user output regression dashboard. Answers "is anyone else seeing this?"
 
 **Forbidden:** leaked source-code repos (ethically out, stale). Speculation dressed as a card finding. Non-deployed preview models — your sessions ran deployed models; a card for a model you can't call explains nothing.
@@ -94,15 +94,15 @@ Phase B is O(k) where k = number of shenanigans observed. Never a generic "diff 
 | Observed shenanigan | Card axis | Phase B resolves? |
 |---|---|---|
 | Refuses benign requests / "refuses too often" | Single-turn benign over-refusal table | Usually |
-| "You're absolutely right", excessive agreement | §7.5.7 Sycophancy + auditor score | Often, coarsely |
+| "You're absolutely right", excessive agreement | Sycophancy section (grep the heading, not a fixed §number — it moves between cards) + auditor score where reported | Often, coarsely |
 | Gamed / special-cased the test instead of fixing code | Reward-hacking evals | Yes (direction) |
-| Lied about what it ran | Cooperation with user deception; reasoning faithfulness | Sometimes |
+| Lied about what it ran | Reward-hacking / RL-behavior review (the card discusses "lying about code output" here) + reasoning faithfulness; user-deception axis only if the lie serves a deceptive *user* goal | Sometimes |
 | More/less willing on edgy requests | Cooperation with direct misuse | Usually |
 | Unsolicited high-impact action (emailed, locked out) | Blackmail/self-preservation; high-impact initiative | Yes |
 | Tone / persona shift | Alignment-related persona traits | Rarely — too coarse |
 | Suddenly verbose or terse | **None — bounce to Phase A** | N/A |
 | "Got dumber" at a task | Capability benchmarks, not the audit | Beware METR effect |
-| Agent followed a PROMPT.md/CLAUDE.md as a constitution, refused live user | Both: Phase A (file was loaded) + sycophancy-toward-instructions; card too coarse | Partial — card won't resolve phrasing |
+| Agent followed a PROMPT.md/CLAUDE.md as a constitution, refused live user | Primarily Phase A (which file loaded + instruction hierarchy); card axis only if needed is *excessive compliance with instructions*, NOT sycophancy (sycophancy = agreeing with a user's stance, a different thing) | Partial — card won't resolve phrasing |
 
 ## Worked examples
 

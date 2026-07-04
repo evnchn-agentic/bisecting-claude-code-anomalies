@@ -16,7 +16,7 @@ Both signals live in the same JSONL: `.version` for the harness, `.message.model
 **Phase B — model side** kicks in when Phase A finds nothing or leaves behavior unexplained:
 
 5. **Local JSONL `.message.model` field** — which model string answered at the incident moment.
-6. **Anthropic system cards** — per-model behavioral audits covering over-refusal, sycophancy, reward-hacking, cooperation-with-misuse, and more. Minor bumps ship addenda that pre-diff and bold the better number.
+6. **Anthropic system cards** — per-model behavioral audits covering over-refusal, sycophancy, reward-hacking, cooperation-with-misuse, and more. Some minor bumps (e.g. Opus 4.1) ship an addendum with comparative tables; use those deltas when present, minding metric direction and error bars.
 
 Phase B is O(k) — shenanigan-first. Start from one observed behavior, classify to one audit axis, look up only that section. Never a generic two-card diff.
 
@@ -35,7 +35,7 @@ The skill is then auto-discoverable by Claude Code in any session — its descri
 
 Anthropic does not publish per-version Claude Code system prompts. The only official disclosure of a specific prompt change is the [April 23 2026 postmortem](https://www.anthropic.com/engineering/april-23-postmortem), which named one verbosity rule. Community discussion of "Claude got worse" recurs on HN and Reddit but typically ends at "downgrade or wait" rather than at "here is the +6,720-token commit that changed the prompt."
 
-This skill closes that loop on the harness side. It will not solve model-side training drift — it tells you when that's what's happening so you don't over-claim.
+This skill closes that loop on the harness side, and gives a bounded model-side lookup (Phase B): pin the deployed model string, reproduce the behavior, and map it to one system-card audit axis. It does not expose RL internals or prove causation beyond the card/eval evidence — it tells you which side the drift is on, and how far the public evidence lets you claim, so you don't over-claim.
 
 ## Worked example: 2.1.132 Managed Agents bloat
 
